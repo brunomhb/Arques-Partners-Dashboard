@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control | Arques & Partners</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- FullCalendar para el calendario -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
+    <!-- jsPDF y html2canvas para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Fuente Inter de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(3deg);
+            background: #eef2ff;
+            border: 2px dashed #6366f1;
+        }
+        .drag-over {
+            background-color: #f0f9ff;
+            border: 2px dashed #0284c7;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        :root {
+            --fc-border-color: #e2e8f0;
+            --fc-daygrid-day-number-color: #374151;
+            --fc-today-bg-color: rgba(99, 102, 241, 0.1);
+            --fc-event-bg-color: #4f46e5;
+            --fc-event-border-color: #4338ca;
+        }
+        .fc .fc-button-primary {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .fc .fc-button-primary:hover {
+             background-color: #4338ca;
+            border-color: #4338ca;
+        }
+        .fc .fc-daygrid-day.fc-day-today {
+            background-color: var(--fc-today-bg-color);
+        }
+        .fc-event {
+            cursor: pointer;
+        }
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="flex h-screen bg-white">
+        <!-- Barra Lateral de Navegación -->
+        <aside class="w-64 flex-shrink-0 bg-gray-900 text-gray-200 flex flex-col">
+            <div class="h-16 flex items-center justify-center px-4 border-b border-gray-700">
+                <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/wAARCAA4AFADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAECA//EABwQAQEBAAEFAAAAAAAAAAAAAAABAhESUWFxkP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD2UAQUmIGUgAkgKkCoFQAQAAABQABQABQQqIFSAqQFQSoAIAAAAAAAFIAAAABBUgKkBUAqAEAIAAACgAAAUAAUEKkBcgKkBUAqAEAIAAAAAAAFIAAAABBUgKkBUgAQAQAgAAAFAAAFAA//2Q==" alt="Logo Arques & Partners" class="h-8 w-8 mr-2">
+                <h1 class="text-lg font-bold">Arques & Partners</h1>
+            </div>
+            <nav class="flex-1 px-4 py-4 space-y-2">
+                <a href="#" data-view="dashboard" class="nav-link flex items-center px-3 py-2.5 bg-gray-700 rounded-lg">
+                    <i data-lucide="layout-dashboard" class="h-5 w-5 mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" data-view="projects" class="nav-link flex items-center px-3 py-2.5 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <i data-lucide="kanban-square" class="h-5 w-5 mr-3"></i>
+                    <span>Proyectos</span>
+                </a>
+                <a href="#" data-view="calendar" class="nav-link flex items-center px-3 py-2.5 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <i data-lucide="calendar-days" class="h-5 w-5 mr-3"></i>
+                    <span>Entregas</span>
+                </a>
+                <a href="#" data-view="vacations" class="nav-link flex items-center px-3 py-2.5 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <i data-lucide="plane" class="h-5 w-5 mr-3"></i>
+                    <span>Vacaciones</span>
+                </a>
+                <a href="#" data-view="team" class="nav-link flex items-center px-3 py-2.5 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <i data-lucide="users" class="h-5 w-5 mr-3"></i>
+                    <span>Equipo</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center">
+                    <img src="https://placehold.co/40x40/eef2ff/6366f1?text=A" alt="Avatar de usuario" class="rounded-full">
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold">Ana García</p>
+                        <p class="text-xs text-gray-400">Arquitecta Principal</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50">
+            <header class="h-16 flex items-center justify-between px-6 border-b bg-white">
+                <div id="header-left" class="flex items-center gap-4">
+                     <h2 id="view-title" class="text-xl font-semibold text-gray-800">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-x-3">
+                    <button id="pdf-btn" class="hidden sm:flex items-center bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg px-4 py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                        <i data-lucide="file-down" class="w-5 h-5 mr-2"></i>
+                        <span>Generar PDF</span>
+                    </button>
+                    <button id="main-action-btn" class="flex items-center bg-indigo-600 text-white font-semibold rounded-lg px-4 py-2 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        <span>Nuevo Proyecto</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 p-6" id="main-content">
+                <!-- Las Vistas se insertarán aquí dinámicamente -->
+            </div>
+        </main>
+    </div>
+
+    <!-- MODALS (Ventanas emergentes) -->
+    <div id="add-project-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+         <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Añadir Nuevo Proyecto</h3>
+            <form id="add-project-form">
+                <div class="mb-4">
+                    <label for="project-name" class="block text-sm font-medium text-gray-700">Nombre del Proyecto</label>
+                    <input type="text" id="project-name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label for="project-client" class="block text-sm font-medium text-gray-700">Cliente</label>
+                    <input type="text" id="project-client" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label for="project-fees" class="block text-sm font-medium text-gray-700">Honorarios (€)</label>
+                    <input type="number" id="project-fees" min="0" step="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Añadir Proyecto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="manage-project-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+            <h3 class="text-lg font-bold mb-1" id="manage-project-title">Gestionar Proyecto</h3>
+            <p class="text-sm text-gray-500 mb-4" id="manage-project-client"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold mb-2">Registrar Horas</h4>
+                    <form id="add-hours-form">
+                        <input type="hidden" id="manage-project-id">
+                        <div class="mb-4">
+                            <label for="hours-member" class="block text-sm font-medium text-gray-700">Miembro del Equipo</label>
+                            <select id="hours-member" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required></select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="hours-amount" class="block text-sm font-medium text-gray-700">Horas a Registrar</label>
+                            <input type="number" id="hours-amount" min="1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg">Añadir Horas</button>
+                    </form>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">Horas Registradas</h4>
+                    <div id="hours-list" class="space-y-2 max-h-48 overflow-y-auto">
+                        <!-- La lista de horas se insertará aquí -->
+                    </div>
+                </div>
+            </div>
+             <div class="flex justify-end mt-6">
+                <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-task-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Añadir Nueva Tarea</h3>
+            <form id="add-task-form">
+                <div class="mb-4">
+                    <label for="task-title" class="block text-sm font-medium text-gray-700">Título de la Tarea</label>
+                    <input type="text" id="task-title" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                 <div class="mb-4">
+                    <label for="task-date" class="block text-sm font-medium text-gray-700">Fecha de Entrega (Opcional)</label>
+                    <input type="date" id="task-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="task-column" class="block text-sm font-medium text-gray-700">Estado</label>
+                    <select id="task-column" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        <option value="ideas">Ideas</option>
+                        <option value="design">En Diseño</option>
+                        <option value="review">Revisión Cliente</option>
+                        <option value="done">Completado</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Añadir Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-member-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Añadir Miembro al Equipo</h3>
+            <form id="add-member-form">
+                <div class="mb-4">
+                    <label for="member-name" class="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input type="text" id="member-name" placeholder="Ej: David Ruiz" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label for="member-role" class="block text-sm font-medium text-gray-700">Rol</label>
+                    <input type="text" id="member-role" placeholder="Ej: Arquitecto Técnico" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Añadir Miembro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="add-vacation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Planificar Vacaciones</h3>
+            <form id="add-vacation-form">
+                 <div class="mb-4">
+                    <label for="vacation-member" class="block text-sm font-medium text-gray-700">Miembro del Equipo</label>
+                    <select id="vacation-member" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required></select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="vacation-start" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
+                        <input type="date" id="vacation-start" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                     <div>
+                        <label for="vacation-end" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+                        <input type="date" id="vacation-end" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Añadir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-vacation-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Gestionar Vacaciones</h3>
+            <form id="edit-vacation-form">
+                <input type="hidden" id="edit-vacation-id">
+                 <div class="mb-4">
+                    <label for="edit-vacation-member" class="block text-sm font-medium text-gray-700">Miembro del Equipo</label>
+                    <input type="text" id="edit-vacation-member" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100" readonly>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="edit-vacation-start" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
+                        <input type="date" id="edit-vacation-start" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                     <div>
+                        <label for="edit-vacation-end" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+                        <input type="date" id="edit-vacation-end" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <button type="button" id="delete-vacation-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg">Eliminar</button>
+                    <div class="space-x-3">
+                        <button type="button" class="modal-cancel-btn bg-gray-200 px-4 py-2 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">Guardar Cambios</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="confirm-delete-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-3">Eliminar Elemento</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">¿Estás seguro? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="flex justify-center space-x-4">
+                    <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md">Cancelar</button>
+                    <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- GESTIÓN DE DATOS ---
+            let appData;
+            
+            const defaultData = {
+                team: [
+                    { id: 1, name: 'Ana García', role: 'Arquitecta Principal', avatar: 'https://placehold.co/80x80/eef2ff/6366f1?text=A' },
+                    { id: 2, name: 'Bruno Díaz', role: 'Arquitecto Junior', avatar: 'https://placehold.co/80x80/d1fae5/10b981?text=B' },
+                    { id: 3, name: 'Clara Lago', role: 'Delineante', avatar: 'https://placehold.co/80x80/fef3c7/f59e0b?text=C' },
+                ],
+                projects: [
+                    { id: 1, name: 'Villa del Sol', client: 'Carlos Pérez', fees: 45000, deadline: '15 Ago, 2025' },
+                    { id: 2, name: 'Edificio Central', client: 'Inmobiliaria Futuro', fees: 80000, deadline: '20 Oct, 2025' },
+                    { id: 3, name: 'Casa Lorca', client: 'Familia Lorca', fees: 15000, deadline: '01 Sep, 2025' },
+                    { id: 4, name: 'Garaje Privado', client: 'Sr. Rodriguez', fees: 5000, deadline: '30 Jun, 2025'}
+                ],
+                tasks: [
+                    { id: 101, projectId: 3, title: 'Remodelación Cocina - Casa Lorca', column: 'ideas', date: '2025-07-30'},
+                    { id: 102, projectId: 1, title: 'Planos de planta baja - Villa del Sol', column: 'design', date: '2025-07-15' },
+                    { id: 103, projectId: 2, title: 'Modelo 3D - Edificio Central', column: 'review', date: '2025-07-20'},
+                    { id: 104, projectId: 1, title: 'Planos estructurales - Villa del Sol', column: 'done', date: null },
+                    { id: 105, projectId: 4, title: 'Bocetos iniciales - Garaje', column: 'done', date: null },
+                    { id: 106, projectId: 4, title: 'Licencia de obra - Garaje', column: 'done', date: null },
+                ],
+                hours: [
+                    { id: 1, projectId: 1, memberId: 1, hours: 40 }, { id: 2, projectId: 1, memberId: 3, hours: 80 },
+                    { id: 3, projectId: 2, memberId: 1, hours: 30 }, { id: 4, projectId: 2, memberId: 3, hours: 55 },
+                    { id: 5, projectId: 3, memberId: 2, hours: 60 }
+                ],
+                vacations: [
+                    { id: 1, memberId: 1, memberName: 'Ana García', start: '2025-08-01', end: '2025-08-16' },
+                    { id: 2, memberId: 2, memberName: 'Bruno Díaz', start: '2025-09-01', end: '2025-09-08' }
+                ]
+            };
+
+            const saveData = () => {
+                localStorage.setItem('arquitecturaDashboardData', JSON.stringify(appData));
+            };
+
+            const loadData = () => {
+                const savedData = localStorage.getItem('arquitecturaDashboardData');
+                appData = savedData ? JSON.parse(savedData) : JSON.parse(JSON.stringify(defaultData));
+            };
+            
+            // --- PLANTILLAS DE VISTAS (Templates) ---
+            const viewTemplates = {
+                dashboard: () => `
+                    <div id="dashboard-content">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                           <div class="bg-white p-5 rounded-xl shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-indigo-100 text-indigo-600"><i data-lucide="briefcase"></i></div><div class="ml-4"><p class="text-sm text-gray-500">Proyectos Activos</p><p class="text-2xl font-bold">${appData.projects.length}</p></div></div></div>
+                           <div class="bg-white p-5 rounded-xl shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-green-100 text-green-600"><i data-lucide="check-circle-2"></i></div><div class="ml-4"><p class="text-sm text-gray-500">Tareas Completadas</p><p class="text-2xl font-bold">${appData.tasks.filter(t=>t.column === 'done').length}</p></div></div></div>
+                           <div class="bg-white p-5 rounded-xl shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-yellow-100 text-yellow-600"><i data-lucide="clock"></i></div><div class="ml-4"><p class="text-sm text-gray-500">Horas Registradas</p><p class="text-2xl font-bold">${appData.hours.reduce((acc, h) => acc + h.hours, 0)}h</p></div></div></div>
+                           <div class="bg-white p-5 rounded-xl shadow"><div class="flex items-center"><div class="p-3 rounded-full bg-red-100 text-red-600"><i data-lucide="alert-triangle"></i></div><div class="ml-4"><p class="text-sm text-gray-500">Entregas Vencidas</p><p class="text-2xl font-bold">2</p></div></div></div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+                            <div class="lg:col-span-3 bg-white p-6 rounded-xl shadow"><h3 class="font-semibold mb-4">Distribución de Horas por Proyecto (Activos)</h3><canvas id="horasChart"></canvas></div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow"><h3 class="font-semibold mb-4">Ingresos por Proyecto (Activos)</h3><canvas id="ingresosChart"></canvas></div>
+                        </div>
+                    </div>`,
+                projects: () => `
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="font-semibold mb-4">Lista de Proyectos</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proyecto</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Honorarios</th>
+                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                ${appData.projects.map(p => `
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.client}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(p.fees)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                                            <button class="view-project-btn text-blue-600 hover:text-blue-900" data-id="${p.id}">Ver Proyecto</button>
+                                            <button class="manage-project-btn text-indigo-600 hover:text-indigo-900" data-id="${p.id}">Gestionar</button>
+                                            <button class="delete-btn text-red-600 hover:text-red-900" data-type="project" data-id="${p.id}">Eliminar</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`,
+                projectDetail: (projectId) => {
+                    const project = appData.projects.find(p => p.id === projectId);
+                    if (!project) return `<p>Proyecto no encontrado.</p>`;
+                    const columns = { ideas: [], design: [], review: [], done: [] };
+                    appData.tasks.filter(t => t.projectId === projectId).forEach(task => {
+                        if (columns[task.column]) columns[task.column].push(task);
+                    });
+                    return `<div class="flex space-x-4 overflow-x-auto h-full pb-4">
+                        ${Object.entries(columns).map(([key, tasks]) => `
+                            <div class="kanban-column flex-shrink-0 w-80 bg-gray-100 rounded-lg">
+                               <h3 class="font-semibold text-gray-700 p-3 border-b capitalize">${key.replace('_', ' ')} (${tasks.length})</h3>
+                               <div class="p-2 space-y-3 task-list h-full overflow-y-auto" data-column-id="${key}">
+                                    ${tasks.map(task => `
+                                        <div class="task-card bg-white p-3 rounded-md shadow cursor-grab relative" draggable="true" data-id="${task.id}">
+                                            <button class="delete-btn absolute top-1 right-1 text-gray-300 hover:text-red-600" data-type="task" data-id="${task.id}"><i data-lucide="x" class="w-4 h-4 pointer-events-none"></i></button>
+                                            <p class="font-semibold text-sm pr-4 ${task.column === 'done' ? 'text-gray-500 line-through' : ''}">${task.title}</p>
+                                        </div>`).join('')}
+                               </div>
+                            </div>`).join('')}
+                    </div>`;
+                },
+                team: () => `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        ${appData.team.map(member => `
+                            <div class="bg-white rounded-xl shadow p-6 text-center transition hover:shadow-lg hover:-translate-y-1 relative" data-id="${member.id}">
+                                <button class="delete-btn absolute top-2 right-2 text-gray-400 hover:text-red-600" data-type="member" data-id="${member.id}"><i data-lucide="x" class="w-5 h-5 pointer-events-none"></i></button>
+                                <img src="${member.avatar}" alt="Avatar" class="w-20 h-20 rounded-full mx-auto mb-4 ring-4 ring-indigo-100">
+                                <h4 class="font-bold text-lg">${member.name}</h4>
+                                <p class="text-sm text-indigo-600 font-semibold">${member.role}</p>
+                            </div>`).join('')}
+                    </div>`,
+                calendar: () => `<div id="project-calendar" class="bg-white p-4 rounded-xl shadow h-full"></div>`,
+                vacations: () => `<div id="vacation-calendar" class="bg-white p-4 rounded-xl shadow h-full"></div>`
+            };
+            
+            // --- RENDERIZADO PRINCIPAL ---
+            const mainContent = document.getElementById('main-content');
+            let activeView = 'dashboard';
+            let activeProjectId = null;
+            let horasChartInstance = null;
+            let ingresosChartInstance = null;
+
+            const render = () => {
+                if (activeView === 'projectDetail') {
+                     mainContent.innerHTML = viewTemplates.projectDetail(activeProjectId);
+                } else {
+                    mainContent.innerHTML = viewTemplates[activeView]();
+                }
+
+                lucide.createIcons();
+                if (activeView === 'dashboard') initDashboard();
+                if (activeView === 'projectDetail') initKanbanDragDrop();
+                if (activeView === 'projects') initProjectListActions();
+                if (activeView === 'calendar') initProjectCalendar();
+                if (activeView === 'vacations') initVacationCalendar();
+                initActionButtons();
+            };
+            
+             const initProjectListActions = () => {
+                 document.querySelectorAll('.view-project-btn').forEach(btn => {
+                    btn.addEventListener('click', e => {
+                        activeProjectId = parseInt(e.currentTarget.dataset.id);
+                        activeView = 'projectDetail';
+                        render();
+                        updateHeader();
+                    });
+                });
+                initActionButtons();
+            };
+
+            // --- LÓGICA DE COMPONENTES ---
+            const initDashboard = () => {
+                const horasCtx = document.getElementById('horasChart');
+                const ingresosCtx = document.getElementById('ingresosChart');
+                if(!horasCtx || !ingresosCtx) return;
+
+                if (horasChartInstance) horasChartInstance.destroy();
+                if (ingresosChartInstance) ingresosChartInstance.destroy();
+                
+                const activeProjects = appData.projects.filter(project => {
+                    const projectTasks = appData.tasks.filter(task => task.projectId === project.id);
+                    if (projectTasks.length === 0) return true;
+                    return projectTasks.some(task => task.column !== 'done');
+                });
+
+                const projectLabels = activeProjects.map(p => p.name);
+                const memberColors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                
+                const hourDatasets = appData.team.map((member, index) => ({
+                    label: member.name,
+                    data: activeProjects.map(project => 
+                        appData.hours.find(h => h.projectId === project.id && h.memberId === member.id)?.hours || 0
+                    ),
+                    backgroundColor: memberColors[index % memberColors.length],
+                }));
+
+                horasChartInstance = new Chart(horasCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: projectLabels, datasets: hourDatasets },
+                    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+                });
+
+                ingresosChartInstance = new Chart(ingresosCtx.getContext('2d'), { type: 'doughnut', data: { labels: activeProjects.map(p => p.name), datasets: [{ data: activeProjects.map(p => p.fees), backgroundColor: ['#4f46e5', '#818cf8', '#a5b4fc', '#c7d2fe'], borderWidth: 0 }] }, options: { responsive: true } });
+                initActionButtons();
+            };
+            
+            const initKanbanDragDrop = () => {
+                const columns = document.querySelectorAll('.task-list');
+                columns.forEach(column => {
+                    column.addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
+                    column.addEventListener('dragleave', e => e.currentTarget.classList.remove('drag-over'));
+                    column.addEventListener('drop', e => {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove('drag-over');
+                        const taskId = parseInt(e.dataTransfer.getData('text/plain'));
+                        const newColumnId = e.currentTarget.dataset.columnId;
+                        const task = appData.tasks.find(t => t.id === taskId);
+                        if (task && task.column !== newColumnId) {
+                            task.column = newColumnId;
+                            saveData();
+                            render();
+                        }
+                    });
+                });
+                 document.querySelectorAll('.task-card').forEach(task => {
+                    task.addEventListener('dragstart', e => {
+                        e.target.classList.add('dragging');
+                        e.dataTransfer.setData('text/plain', e.target.dataset.id);
+                    });
+                    task.addEventListener('dragend', e => e.target.classList.remove('dragging'));
+                });
+                initActionButtons();
+            };
+
+            const initProjectCalendar = () => {
+                const calendarEl = document.getElementById('project-calendar');
+                if(!calendarEl) return;
+                const calendarEvents = appData.tasks.filter(task => task.date).map(task => ({ title: task.title, start: task.date, allDay: true }));
+                new FullCalendar.Calendar(calendarEl, { initialView: 'dayGridMonth', locale: 'es', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }, events: calendarEvents }).render();
+            };
+
+            const initVacationCalendar = () => {
+                const calendarEl = document.getElementById('vacation-calendar');
+                if(!calendarEl) return;
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+                const calendarEvents = appData.vacations.map(vac => ({
+                    id: vac.id,
+                    title: vac.memberName,
+                    start: vac.start,
+                    end: vac.end,
+                    backgroundColor: colors[vac.memberId % colors.length],
+                    borderColor: colors[vac.memberId % colors.length]
+                }));
+                new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    locale: 'es',
+                    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listYear' },
+                    events: calendarEvents,
+                    eventClick: (info) => {
+                        openEditVacationModal(parseInt(info.event.id));
+                    }
+                }).render();
+            };
+            
+            const initActionButtons = () => {
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        itemToDelete.type = e.currentTarget.dataset.type;
+                        itemToDelete.id = parseInt(e.currentTarget.dataset.id);
+                        openModal(modals.confirm_delete);
+                    });
+                });
+                 document.querySelectorAll('.manage-project-btn').forEach(btn => {
+                    btn.addEventListener('click', e => openManageProjectModal(parseInt(e.currentTarget.dataset.id)));
+                });
+            };
+
+            // --- NAVEGACIÓN Y MANEJO DE VISTAS ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const viewTitle = document.getElementById('view-title');
+            const mainActionBtn = document.getElementById('main-action-btn');
+            const pdfBtn = document.getElementById('pdf-btn');
+            const headerLeft = document.getElementById('header-left');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    activeView = link.dataset.view;
+                    activeProjectId = null;
+                    navLinks.forEach(l => l.classList.remove('bg-gray-700'));
+                    link.classList.add('bg-gray-700');
+                    render();
+                    updateHeader();
+                });
+            });
+
+            const updateHeader = () => {
+                const backButton = headerLeft.querySelector('#back-btn');
+                if (backButton) backButton.remove();
+
+                mainActionBtn.classList.remove('hidden');
+                pdfBtn.classList.add('hidden');
+                
+                let actions;
+
+                if(activeView === 'projectDetail') {
+                    const project = appData.projects.find(p => p.id === activeProjectId);
+                    actions = { title: project.name, btnText: 'Nueva Tarea', modal: 'add-task-modal'};
+                    const backBtn = document.createElement('button');
+                    backBtn.id = 'back-btn';
+                    backBtn.className = 'p-1.5 rounded-md hover:bg-gray-100';
+                    backBtn.innerHTML = `<i data-lucide="arrow-left" class="w-5 h-5"></i>`;
+                    backBtn.onclick = () => {
+                        activeView = 'projects';
+                        activeProjectId = null;
+                        render();
+                        updateHeader();
+                    };
+                    headerLeft.prepend(backBtn);
+
+                } else {
+                    actions = {
+                        dashboard: { title: 'Dashboard', btnText: 'Nuevo Proyecto', modal: 'add-project-modal', showPdf: true },
+                        projects: { title: 'Lista de Proyectos', btnText: 'Nuevo Proyecto', modal: 'add-project-modal' },
+                        calendar: { title: 'Calendario de Entregas', btnText: '', modal: null },
+                        vacations: { title: 'Calendario de Vacaciones', btnText: 'Planificar Vacaciones', modal: 'add-vacation-modal' },
+                        team: { title: 'Equipo del Estudio', btnText: 'Añadir Miembro', modal: 'add-member-modal' },
+                    }[activeView];
+                }
+                
+                viewTitle.textContent = actions.title;
+                if (actions.btnText) {
+                    mainActionBtn.innerHTML = `<i data-lucide="plus" class="w-5 h-5 mr-2"></i><span>${actions.btnText}</span>`;
+                    mainActionBtn.dataset.modal = actions.modal;
+                } else {
+                    mainActionBtn.classList.add('hidden');
+                }
+                if(actions.showPdf) pdfBtn.classList.remove('hidden');
+                lucide.createIcons();
+            };
+            
+            // --- LÓGICA DE MODALS ---
+            const modals = {
+                add_project: document.getElementById('add-project-modal'),
+                manage_project: document.getElementById('manage-project-modal'),
+                add_task: document.getElementById('add-task-modal'),
+                add_member: document.getElementById('add-member-modal'),
+                add_vacation: document.getElementById('add-vacation-modal'),
+                edit_vacation: document.getElementById('edit-vacation-modal'),
+                confirm_delete: document.getElementById('confirm-delete-modal'),
+            }
+            
+            const openModal = (modal) => modal.classList.remove('hidden');
+            const closeModal = (modal) => modal.classList.add('hidden');
+
+            mainActionBtn.addEventListener('click', () => {
+                const modalId = mainActionBtn.dataset.modal;
+                const modal = document.getElementById(modalId);
+                if (modalId === 'add-vacation-modal') {
+                    document.getElementById('vacation-member').innerHTML = appData.team.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                }
+                if(modal) openModal(modal);
+            });
+
+            document.querySelectorAll('.modal-cancel-btn').forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.fixed'))));
+            
+            const openManageProjectModal = (projectId) => {
+                const project = appData.projects.find(p => p.id === projectId);
+                if(!project) return;
+                
+                document.getElementById('manage-project-title').textContent = `Gestionar: ${project.name}`;
+                document.getElementById('manage-project-client').textContent = `Cliente: ${project.client}`;
+                document.getElementById('manage-project-id').value = projectId;
+
+                document.getElementById('hours-member').innerHTML = appData.team.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+                
+                updateHoursList(projectId);
+                openModal(modals.manage_project);
+            };
+
+            const openEditVacationModal = (vacationId) => {
+                const vacation = appData.vacations.find(v => v.id === vacationId);
+                if (!vacation) return;
+
+                document.getElementById('edit-vacation-id').value = vacation.id;
+                document.getElementById('edit-vacation-member').value = vacation.memberName;
+                document.getElementById('edit-vacation-start').value = vacation.start;
+                document.getElementById('edit-vacation-end').value = vacation.end;
+
+                openModal(modals.edit_vacation);
+            };
+
+            const updateHoursList = (projectId) => {
+                 const hoursList = document.getElementById('hours-list');
+                const projectHours = appData.hours.filter(h => h.projectId === projectId);
+                if(projectHours.length === 0){
+                    hoursList.innerHTML = `<p class="text-sm text-gray-500">Aún no hay horas registradas.</p>`;
+                    return;
+                }
+                hoursList.innerHTML = projectHours.map(h => {
+                    const member = appData.team.find(m => m.id === h.memberId);
+                    return `<div class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                                <span class="text-sm">${member?.name || 'Miembro no encontrado'}</span>
+                                <div class="flex items-center gap-x-2">
+                                    <span class="text-sm font-semibold">${h.hours} horas</span>
+                                    <button class="delete-btn text-gray-400 hover:text-red-600" data-type="hour" data-id="${h.id}">
+                                        <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
+                                    </button>
+                                </div>
+                            </div>`;
+                }).join('');
+                lucide.createIcons();
+                initActionButtons();
+            };
+
+            // --- LÓGICA DE FORMULARIOS ---
+             document.getElementById('add-project-form').addEventListener('submit', e => {
+                e.preventDefault();
+                appData.projects.push({ 
+                    id: Date.now(), 
+                    name: e.target.elements['project-name'].value,
+                    client: e.target.elements['project-client'].value,
+                    fees: parseFloat(e.target.elements['project-fees'].value),
+                });
+                saveData();
+                if(activeView === 'projects' || activeView === 'dashboard') render();
+                closeModal(modals.add_project);
+                e.target.reset();
+            });
+
+            document.getElementById('add-hours-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const projectId = parseInt(e.target.elements['manage-project-id'].value);
+                const memberId = parseInt(e.target.elements['hours-member'].value);
+                const hours = parseInt(e.target.elements['hours-amount'].value);
+
+                const existingEntry = appData.hours.find(h => h.projectId === projectId && h.memberId === memberId);
+                if(existingEntry){
+                    existingEntry.hours += hours;
+                } else {
+                     appData.hours.push({ id: Date.now(), projectId, memberId, hours });
+                }
+                
+                saveData();
+                updateHoursList(projectId);
+                if (activeView === 'dashboard') initDashboard();
+                e.target.reset();
+            });
+
+            document.getElementById('add-task-form').addEventListener('submit', e => {
+                e.preventDefault();
+                appData.tasks.push({ 
+                    id: Date.now(), 
+                    projectId: activeProjectId,
+                    title: e.target.elements['task-title'].value, 
+                    column: e.target.elements['task-column'].value, 
+                    date: e.target.elements['task-date'].value || null 
+                });
+                saveData();
+                render();
+                closeModal(modals.add_task);
+                e.target.reset();
+            });
+            
+            document.getElementById('add-member-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const name = e.target.elements['member-name'].value;
+                appData.team.push({ id: Date.now(), name, role: e.target.elements['member-role'].value, avatar: `https://placehold.co/80x80/e2e8f0/334155?text=${name.charAt(0).toUpperCase()}` });
+                saveData();
+                if(activeView === 'team') render();
+                closeModal(modals.add_member);
+                e.target.reset();
+            });
+
+            document.getElementById('add-vacation-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const memberId = parseInt(e.target.elements['vacation-member'].value);
+                const member = appData.team.find(m => m.id === memberId);
+                appData.vacations.push({ id: Date.now(), memberId, memberName: member.name, start: e.target.elements['vacation-start'].value, end: e.target.elements['vacation-end'].value });
+                saveData();
+                if(activeView === 'vacations') render();
+                closeModal(modals.add_vacation);
+                e.target.reset();
+            });
+
+            document.getElementById('edit-vacation-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const vacationId = parseInt(document.getElementById('edit-vacation-id').value);
+                const vacation = appData.vacations.find(v => v.id === vacationId);
+                if(vacation){
+                    vacation.start = document.getElementById('edit-vacation-start').value;
+                    vacation.end = document.getElementById('edit-vacation-end').value;
+                    saveData();
+                    if(activeView === 'vacations') render();
+                }
+                closeModal(modals.edit_vacation);
+            });
+
+            // --- LÓGICA DE ELIMINACIÓN ---
+            let itemToDelete = { type: null, id: null };
+            document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+                const { type, id } = itemToDelete;
+                if(type === 'task') appData.tasks = appData.tasks.filter(t => t.id !== id);
+                if(type === 'member') appData.team = appData.team.filter(m => m.id !== id);
+                if(type === 'project') appData.projects = appData.projects.filter(p => p.id !== id);
+                if(type === 'vacation') appData.vacations = appData.vacations.filter(v => v.id !== id);
+                if(type === 'hour') appData.hours = appData.hours.filter(h => h.id !== id);
+                
+                saveData();
+                
+                if(type === 'hour') {
+                    const projectId = parseInt(document.getElementById('manage-project-id').value);
+                    updateHoursList(projectId);
+                    if(activeView === 'dashboard') initDashboard();
+                } else {
+                     render();
+                }
+                
+                closeModal(modals.confirm_delete);
+            });
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => closeModal(modals.confirm_delete));
+            
+            document.getElementById('delete-vacation-btn').addEventListener('click', () => {
+                itemToDelete.type = 'vacation';
+                itemToDelete.id = parseInt(document.getElementById('edit-vacation-id').value);
+                closeModal(modals.edit_vacation);
+                openModal(modals.confirm_delete);
+            });
+
+
+            // --- GENERACIÓN DE PDF ---
+            pdfBtn.addEventListener('click', async () => {
+                const { jsPDF } = window.jspdf;
+                const content = document.getElementById('dashboard-content');
+                const pdfBtnOriginalText = pdfBtn.innerHTML;
+                pdfBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mr-2 animate-spin"></i><span>Generando...</span>`;
+                lucide.createIcons();
+                
+                const canvas = await html2canvas(content, { scale: 2, useCORS: true, allowTaint: true, logging: false });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth-10, pdfHeight-10);
+                pdf.save('Resumen_Arques_Partners.pdf');
+                
+                pdfBtn.innerHTML = pdfBtnOriginalText;
+                lucide.createIcons();
+            });
+
+            // --- CARGA INICIAL DE LA APP ---
+            loadData();
+            render();
+            updateHeader();
+        });
+    </script>
+</body>
+</html>
